@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Poker Lab — ระบบสาธิตโป๊กเกอร์</title>
+<style>
+  :root{
+    --bg:#f6f7f6; --surface:#ffffff; --surface2:#fbfcfb;
+    --border:#e6e9e6; --border2:#d6dbd6;
+    --text:#1d2622; --muted:#79857e; --faint:#aab2ac;
+    --accent:#0f7a5f; --accent-d:#0b5e49; --accent-soft:#e7f3ee;
+    --red:#d23b3b; --black:#222; --amber:#d99a2b;
+    --win:#1f9d6b; --tie:#c8a24a; --lose:#cf5b5b;
+    --t-prem:#0f7a5f; --t-strong:#5aa888; --t-play:#e3b765; --t-spec:#efe2c2; --t-fold:#eef0ee;
+    --radius:12px; --shadow:0 1px 2px rgba(20,40,30,.05),0 4px 16px rgba(20,40,30,.04);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--text);min-height:100vh;
+    font-family:"Inter","Segoe UI",system-ui,"Sarabun",sans-serif;line-height:1.55;
+    font-size:15px;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent)}
+  /* ---- header ---- */
+  header{padding:22px 20px 10px;text-align:center}
+  header h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+  header h1 .suit{color:var(--accent);font-weight:400}
+  header p{margin:4px 0 0;color:var(--muted);font-size:13px}
+  /* ---- nav ---- */
+  nav{display:flex;gap:2px;justify-content:center;flex-wrap:wrap;padding:6px;
+    position:sticky;top:0;z-index:40;background:rgba(246,247,246,.85);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border)}
+  nav button{padding:9px 15px;border:none;background:transparent;color:var(--muted);
+    border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;font-family:inherit;transition:.15s}
+  nav button:hover{background:var(--surface);color:var(--text)}
+  nav button.active{background:var(--accent);color:#fff;font-weight:600}
+  main{max-width:960px;margin:0 auto;padding:20px 16px 80px}
+  .panel{display:none;animation:fade .2s ease}
+  .panel.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+  /* ---- typography ---- */
+  h2{font-size:20px;font-weight:700;margin:6px 0 4px;letter-spacing:-.01em}
+  h2 .num{color:var(--accent);font-weight:700;margin-right:6px}
+  h3{font-size:15px;font-weight:700;margin:18px 0 6px;color:var(--text)}
+  .lead{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+  .muted{color:var(--muted)}
+  .faint{color:var(--faint)}
+  code{background:var(--surface);border:1px solid var(--border);border-radius:5px;
+    padding:1px 6px;font-size:13px;font-family:"SF Mono",Consolas,monospace;color:var(--accent-d)}
+  /* ---- card surface ---- */
+  .box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px 18px;margin:12px 0;box-shadow:var(--shadow)}
+  .box.flat{box-shadow:none}
+  .box.tip{background:var(--accent-soft);border-color:#cfe7dd}
+  .box.tip b{color:var(--accent-d)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:680px){.grid2,.grid3{grid-template-columns:1fr}}
+  /* ---- playing cards ---- */
+  .card{display:inline-flex;flex-direction:column;justify-content:space-between;
+    width:46px;height:64px;background:#fff;border-radius:8px;border:1px solid var(--border2);
+    padding:5px 6px;margin:2px;font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  .card.sm{width:34px;height:48px;font-size:12px;padding:3px 4px;border-radius:6px}
+  .card.lg{width:54px;height:76px}
+  .card .r{font-size:15px;line-height:1}
+  .card.sm .r{font-size:13px}
+  .card.lg .r{font-size:18px}
+  .card .s{font-size:18px;text-align:right;line-height:1}
+  .card.lg .s{font-size:22px}
+  .card.red{color:var(--red)} .card.black{color:var(--black)}
+  .card.back{border-color:#cfdbd4;
+    background:repeating-linear-gradient(45deg,#dde9e3,#dde9e3 5px,#e8f0eb 5px,#e8f0eb 10px)}
+  .card.back .r,.card.back .s{color:#9bb3a8}
+  .card.hl{outline:2px solid var(--accent);outline-offset:1px}
+  .hand-row{display:flex;flex-wrap:wrap;align-items:center;gap:1px;margin:4px 0}
+  /* ---- buttons / inputs ---- */
+  button.btn{background:var(--accent);color:#fff;border:none;padding:9px 16px;border-radius:9px;
+    cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;transition:.12s}
+  button.btn:hover{background:var(--accent-d)}
+  button.btn:disabled{opacity:.4;cursor:not-allowed}
+  button.btn.ghost{background:var(--surface);color:var(--text);border:1px solid var(--border2)}
+  button.btn.ghost:hover{background:var(--surface2);border-color:var(--accent)}
+  button.btn.danger{background:var(--surface);color:var(--lose);border:1px solid #e8cdcd}
+  button.btn.danger:hover{background:#fcf3f3}
+  input,select{background:var(--surface);border:1px solid var(--border2);color:var(--text);
+    padding:8px 10px;border-radius:8px;font-size:14px;font-family:inherit}
+  input:focus,select:focus{outline:none;border-color:var(--accent)}
+  label{font-size:13.5px;color:var(--muted)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  /* ---- tables ---- */
+  table{border-collapse:collapse;width:100%;margin:8px 0;font-size:14px}
+  th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;
+    border-bottom:2px solid var(--border2)}
+  tbody tr:last-child td{border-bottom:none}
+  /* ---- equity bar ---- */
+  .bar{height:30px;border-radius:8px;overflow:hidden;display:flex;font-size:12px;font-weight:600;
+    color:#fff;margin:8px 0;border:1px solid var(--border)}
+  .bar div{display:flex;align-items:center;justify-content:center;white-space:nowrap}
+  .bar .w{background:var(--win)} .bar .t{background:var(--tie)} .bar .l{background:var(--lose)}
+  /* ---- pills / chips ---- */
+  .pill{display:inline-block;background:var(--surface);border:1px solid var(--border2);
+    border-radius:20px;padding:3px 11px;font-size:12.5px;margin:2px;color:var(--text)}
+  .tag{display:inline-block;padding:1px 8px;border-radius:6px;font-size:12px;font-weight:600}
+  .tag.g{background:var(--accent-soft);color:var(--accent-d)}
+  .tag.a{background:#fbf1da;color:#9a6c12}
+  .tag.r{background:#fbe9e9;color:#a83232}
+  /* ---- formula box ---- */
+  .formula{background:var(--surface2);border:1px dashed var(--border2);border-radius:10px;
+    padding:10px 14px;font-family:"SF Mono",Consolas,monospace;font-size:13.5px;margin:8px 0;color:var(--accent-d)}
+  /* ---- mini calculator ---- */
+  .calc{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin:8px 0}
+  .calc .out{font-size:16px;font-weight:700;color:var(--accent-d);margin-top:6px}
+  .calc input{width:90px}
+  /* ---- range chart ---- */
+  .range-wrap{overflow-x:auto;margin:8px 0}
+  table.range{border-collapse:separate;border-spacing:2px;width:auto;margin:0 auto;font-size:0}
+  table.range td{padding:0;border:none}
+  .rc{width:30px;height:30px;border-radius:5px;display:flex;align-items:center;justify-content:center;
+    font-size:10.5px;font-weight:700;cursor:pointer;color:#1d2622;transition:transform .08s;user-select:none}
+  .rc:hover{transform:scale(1.15);outline:2px solid var(--text);z-index:2;position:relative}
+  .rc.prem{background:var(--t-prem);color:#fff}
+  .rc.strong{background:var(--t-strong);color:#fff}
+  .rc.play{background:var(--t-play)}
+  .rc.spec{background:var(--t-spec)}
+  .rc.fold{background:var(--t-fold);color:var(--faint)}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;margin:10px 0;justify-content:center}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .legend i{width:14px;height:14px;border-radius:4px;display:inline-block}
+  @media(max-width:680px){.rc{width:23px;height:23px;font-size:8.5px}}
+  /* ---- position diagram ---- */
+  .posbtn{padding:5px 11px;border:1px solid var(--border2);background:var(--surface);border-radius:8px;
+    cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;color:var(--muted);transition:.12s}
+  .posbtn:hover{border-color:var(--accent)}
+  .posbtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .postable{position:relative;width:100%;max-width:430px;height:310px;margin:14px auto;
+    background:radial-gradient(ellipse at center,#eef6f1,#e3eee8 75%);border:1px solid var(--border2);border-radius:155px}
+  .postable .ring2{position:absolute;inset:22px;border:1.5px solid #cfe3d8;border-radius:130px;pointer-events:none}
+  .pseat{position:absolute;transform:translate(-50%,-50%);width:60px;text-align:center;z-index:2}
+  .pmark{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:800;color:#fff;margin:0 auto;box-shadow:0 1px 4px rgba(0,0,0,.22);letter-spacing:-.02em}
+  .pmark.late{background:var(--accent)}
+  .pmark.mid{background:var(--amber)}
+  .pmark.early{background:var(--lose)}
+  .pmark.blind{background:#5b8fb0}
+  .pmark.dealer-edge{box-shadow:0 0 0 3px #fff,0 0 0 4px var(--text),0 1px 4px rgba(0,0,0,.22)}
+  .pseat .plbl{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.2}
+  .center-chip{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;
+    font-size:12px;color:var(--muted);font-weight:700}
+  @media(max-width:680px){
+    .postable{height:270px;max-width:340px}
+    .pmark{width:40px;height:40px;font-size:10px}
+    .pseat{width:50px}
+  }
+  /* ---- poker table (วงรี: วางที่นั่งรอบโต๊ะ) ---- */
+  .felt{position:relative;margin:16px auto;width:100%;max-width:760px;height:430px;
+    background:radial-gradient(ellipse at center,#eef6f1 0%,#e3eee8 70%,#dbe8e1 100%);
+    border:1px solid var(--border2);border-radius:215px;box-shadow:var(--shadow)}
+  .felt .ring{position:absolute;inset:26px;border:1.5px solid #cfe3d8;border-radius:190px;pointer-events:none}
+  .seat-abs{position:absolute;transform:translate(-50%,-50%);width:138px;z-index:3}
+  .seat{background:var(--surface);border:1px solid var(--border2);border-radius:12px;
+    padding:8px 7px;text-align:center;transition:.15s;box-shadow:0 1px 3px rgba(20,40,30,.08)}
+  .seat.hero{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+  .seat.turn{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),0 0 12px rgba(15,122,95,.25)}
+  .seat.folded{opacity:.4}
+  .seat .nm{font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;gap:5px}
+  .seat .st{color:var(--accent-d);font-size:12.5px;font-weight:600}
+  .seat .ac{font-size:11px;color:var(--muted);min-height:14px;margin-top:1px}
+  .dealer{display:inline-block;width:16px;height:16px;line-height:16px;border-radius:50%;
+    background:var(--text);color:#fff;font-size:10px;font-weight:700}
+  /* ชิปเดิมพันที่ลอยเข้าหากองกลาง */
+  .bet-chip{position:absolute;transform:translate(-50%,-50%);z-index:2;
+    background:var(--accent);color:#fff;font-size:11px;font-weight:700;
+    padding:2px 9px;border-radius:20px;box-shadow:0 1px 4px rgba(0,0,0,.2);white-space:nowrap}
+  .board-area{position:absolute;left:50%;top:47%;transform:translate(-50%,-50%);width:90%;text-align:center;z-index:1}
+  .pot{color:var(--accent-d);font-weight:700;font-size:14px;margin-top:8px}
+  @media(max-width:680px){
+    .felt{height:380px;border-radius:190px}
+    .felt .ring{border-radius:165px}
+    .seat-abs{width:110px}
+    .seat .nm{font-size:11.5px} .seat .st{font-size:11px} .seat .ac{font-size:10px}
+  }
+  .controls{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:14px;margin-top:12px;box-shadow:var(--shadow)}
+  .logbox{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;
+    height:130px;overflow:auto;font-size:12.5px;line-height:1.6;color:var(--muted);margin-top:12px}
+  .logbox div{padding:1px 0}
+  input[type=range]{accent-color:var(--accent)}
+  hr{border:none;border-top:1px solid var(--border);margin:14px 0}
+  .toc{position:sticky;top:50px;font-size:12.5px}
+  ul.clean{margin:6px 0;padding-left:20px}
+  ul.clean li{margin:3px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="suit">♠</span> Poker Lab <span class="suit">♥</span></h1>
+  <p>กติกา · กลยุทธ์ · ตัวประเมินมือ · Odds/Equity · โต๊ะเล่นกับบอท — Texas Hold'em</p>
+</header>
+
+<nav>
+  <button data-tab="basics" class="active">พื้นฐาน</button>
+  <button data-tab="strategy">กลยุทธ์</button>
+  <button data-tab="eval">ประเมินไพ่</button>
+  <button data-tab="odds">Odds</button>
+  <button data-tab="play">โต๊ะเล่น</button>
+</nav>
+
+<main>
+  <!-- ============ พื้นฐาน ============ -->
+  <section class="panel active" id="basics">
+    <h2>ลำดับไพ่ (Hand Rankings)</h2>
+    <p class="lead">ใช้ไพ่ดีที่สุด 5 ใบตัดสิน — เรียงจากสูงสุดลงล่าง</p>
+    <div class="box flat" style="padding:6px 10px"><div id="rankShowcase"></div></div>
+
+    <h2 style="margin-top:26px">กติกา Texas Hold'em</h2>
+    <div class="grid2">
+      <div class="box">
+        <h3 style="margin-top:0">ลำดับการเล่น</h3>
+        <ul class="clean">
+          <li><b>แจกไพ่</b> — แต่ละคนได้ไพ่ปิด 2 ใบ (hole cards)</li>
+          <li><b>Blinds</b> — คนหลังปุ่ม dealer ลง Small Blind, ถัดไป Big Blind</li>
+          <li><b>Preflop</b> — เดิมพันรอบแรกหลังได้ไพ่</li>
+          <li><b>Flop</b> — เปิดไพ่กลาง 3 ใบ → เดิมพัน</li>
+          <li><b>Turn</b> — เปิดใบที่ 4 → เดิมพัน</li>
+          <li><b>River</b> — เปิดใบที่ 5 → เดิมพัน</li>
+          <li><b>Showdown</b> — เปิดไพ่เทียบกัน ผู้ไพ่สูงสุดชนะ</li>
+        </ul>
+      </div>
+      <div class="box">
+        <h3 style="margin-top:0">ทางเลือกแต่ละตา</h3>
+        <ul class="clean">
+          <li><b>Fold</b> — หมอบทิ้งไพ่</li>
+          <li><b>Check</b> — ผ่าน (เมื่อไม่มีใครเดิมพัน)</li>
+          <li><b>Call</b> — เรียก จ่ายเท่าที่มีคนเดิมพัน</li>
+          <li><b>Bet / Raise</b> — เดิมพัน / เพิ่มเงิน</li>
+          <li><b>All-in</b> — ลงหมดหน้าตัก</li>
+        </ul>
+        <p class="muted" style="font-size:13px;margin-bottom:0">ใช้ไพ่ดีสุด 5 ใบ จาก 7 ใบ (2 ในมือ + 5 กลาง)</p>
+      </div>
+    </div>
+    <div class="box tip">
+      <b>ศัพท์สำคัญ:</b>
+      <span class="pill">Pot = กองกลาง</span>
+      <span class="pill">Outs = ไพ่ที่ช่วยให้ชนะ</span>
+      <span class="pill">Equity = % โอกาสชนะ</span>
+      <span class="pill">Position = ตำแหน่งนั่ง</span>
+      <span class="pill">Range = ช่วงไพ่ที่เป็นไปได้</span>
+      <span class="pill">Nuts = ไพ่ดีที่สุดที่เป็นไปได้</span>
+    </div>
+  </section>
+
+  <!-- ============ กลยุทธ์ ============ -->
+  <section class="panel" id="strategy">
+    <h2><span class="num">01</span>ตำแหน่ง (Position)</h2>
+    <p class="lead">ตำแหน่งคือเรื่องสำคัญที่สุดอย่างหนึ่ง — ยิ่งได้เดินทีหลัง ยิ่งมีข้อมูลมาก ยิ่งได้เปรียบ</p>
+    <div class="box flat">
+      <div class="row" style="justify-content:center;margin-top:0">
+        <label>เลือกจำนวนผู้เล่นบนโต๊ะ:</label>
+        <span id="posBtns"></span>
+      </div>
+      <div class="postable" id="posTable"><div class="ring2"></div></div>
+      <div class="legend">
+        <span><i style="background:var(--accent)"></i>ตำแหน่งหลัง — ได้เปรียบ (BTN/CO/HJ)</span>
+        <span><i style="background:var(--amber)"></i>กลาง (MP)</span>
+        <span><i style="background:var(--lose)"></i>ตำแหน่งแรก — เสียเปรียบ (UTG)</span>
+        <span><i style="background:#5b8fb0"></i>Blinds — ลงเงินบังคับ</span>
+      </div>
+      <p class="muted" style="font-size:12.5px;text-align:center;margin:6px 0 0">
+        วงขอบขาว = ปุ่ม Dealer (D) · ยิ่งคนเยอะ ยิ่งมีตำแหน่ง early (UTG) เพิ่มขึ้น = เล่นยากขึ้น
+      </p>
+    </div>
+    <div class="box flat">
+      <table>
+        <thead><tr><th>ตำแหน่ง</th><th>ชื่อ</th><th>ลักษณะ</th><th>ช่วงไพ่ที่ควรเล่น</th></tr></thead>
+        <tbody>
+          <tr><td><b>EP</b></td><td>Early (UTG)</td><td>เดินก่อน เสียเปรียบสุด</td><td><span class="tag g">แคบ</span> เฉพาะไพ่แข็ง</td></tr>
+          <tr><td><b>MP</b></td><td>Middle</td><td>กลางๆ</td><td>กว้างขึ้นเล็กน้อย</td></tr>
+          <tr><td><b>CO</b></td><td>Cutoff</td><td>ก่อนปุ่ม ดีมาก</td><td>กว้าง</td></tr>
+          <tr><td><b>BTN</b></td><td>Button</td><td>เดินทีหลังสุด ดีที่สุด</td><td><span class="tag a">กว้างสุด</span> ขโมยบ่อย</td></tr>
+          <tr><td><b>SB/BB</b></td><td>Blinds</td><td>ลงเงินบังคับ เดินทีหลัง preflop แต่ก่อนเขา postflop</td><td>ระวัง เสียเปรียบ postflop</td></tr>
+        </tbody>
+      </table>
+      <p class="muted" style="font-size:13px;margin-bottom:0">💡 หลักการ: <b>"เล่นแน่นในตำแหน่งแรก เล่นกว้างในตำแหน่งหลัง"</b> (tight-early, loose-late)</p>
+    </div>
+
+    <h2><span class="num">02</span>ตาราง 169 มือเริ่มต้น (Starting Hands)</h2>
+    <p class="lead">ให้คะแนนด้วยสูตร <b>Chen Formula</b> — แนวทแยง=คู่, มุมขวาบน=สูท (s), มุมซ้ายล่าง=ต่างดอก (o). คลิกช่องเพื่อดูรายละเอียด</p>
+    <div class="range-wrap"><div id="rangeChart"></div></div>
+    <div class="legend">
+      <span><i style="background:var(--t-prem)"></i>Premium — เปิด/3bet เสมอ</span>
+      <span><i style="background:var(--t-strong)"></i>Strong — เปิดได้ทุกตำแหน่ง</span>
+      <span><i style="background:var(--t-play)"></i>Playable — เปิดในตำแหน่งหลัง</span>
+      <span><i style="background:var(--t-spec)"></i>Speculative — เล่นเมื่อราคาดี</span>
+      <span><i style="background:var(--t-fold)"></i>Fold</span>
+    </div>
+    <div class="box flat" id="handDetail"><span class="muted">คลิกช่องในตารางเพื่อดูคะแนน Chen และคำแนะนำ</span></div>
+
+    <h2><span class="num">03</span>Action ก่อนเปิดไพ่: 3Bet · 4Bet · 5Bet</h2>
+    <div class="box flat">
+      <table>
+        <thead><tr><th>คำ</th><th>หมายถึง</th><th>ความหมายเชิงกลยุทธ์</th></tr></thead>
+        <tbody>
+          <tr><td><b>Open / 2Bet</b></td><td>คนแรกที่ raise (BB ถือเป็น bet แรก)</td><td>เปิดเกมด้วยไพ่ในช่วงของตำแหน่ง</td></tr>
+          <tr><td><b>3Bet</b></td><td>re-raise ครั้งแรก</td><td>ไพ่แข็ง (value) หรือบลัฟด้วยไพ่ที่เล่นต่อได้ (เช่น A5s)</td></tr>
+          <tr><td><b>4Bet</b></td><td>re-raise ต่อจาก 3bet</td><td>มักหมายถึงไพ่ระดับ premium (QQ+, AK) หรือบลัฟเลือกสรร</td></tr>
+          <tr><td><b>5Bet</b></td><td>re-raise ต่อจาก 4bet</td><td>เกือบทั้งหมดคือ all-in — ช่วงไพ่แคบมาก (KK+, บางที AK)</td></tr>
+        </tbody>
+      </table>
+      <p class="muted" style="font-size:13px;margin-bottom:0">ยิ่ง bet ซ้อนกันมาก ช่วงไพ่ยิ่งแคบและแข็งขึ้น — 5bet ส่วนใหญ่ = "ผมมี Aces/Kings"</p>
+    </div>
+
+    <h2><span class="num">04</span>Pot Odds &amp; Equity</h2>
+    <p class="lead">หัวใจของการตัดสินใจ call — เทียบ "ราคาที่จ่าย" กับ "โอกาสชนะ"</p>
+    <div class="grid2">
+      <div class="box flat">
+        <h3 style="margin-top:0">Pot Odds คืออะไร</h3>
+        <div class="formula">required equity = call ÷ (pot + call)</div>
+        <p style="font-size:13.5px">ถ้า <b>equity จริง &gt; required equity</b> → call คุ้มในระยะยาว</p>
+        <div class="calc">
+          <div class="row" style="margin:4px 0">
+            <label>กองกลางตอนนี้ <input type="number" id="poPot" value="300"></label>
+            <label>ต้อง call <input type="number" id="poCall" value="100"></label>
+          </div>
+          <button class="btn" onclick="calcPotOdds()">คำนวณ</button>
+          <div class="out" id="poOut"></div>
+        </div>
+      </div>
+      <div class="box flat">
+        <h3 style="margin-top:0">Rule of 2 &amp; 4 (outs → equity)</h3>
+        <p style="font-size:13.5px">ประมาณ equity เร็วๆ จากจำนวน outs:</p>
+        <div class="formula">flop→river: outs × 4%<br>turn→river: outs × 2%</div>
+        <div class="calc">
+          <div class="row" style="margin:4px 0">
+            <label>จำนวน outs <input type="number" id="outsN" value="9"></label>
+          </div>
+          <button class="btn" onclick="calcOuts()">คำนวณ</button>
+          <div class="out" id="outsOut"></div>
+        </div>
+      </div>
+    </div>
+    <div class="box tip" style="font-size:13.5px">
+      <b>ตัวอย่าง:</b> ถือ flush draw (9 outs) บน flop → equity ≈ 9×4 = 36%. ถ้าคู่ต่อสู้เดิมพันให้ pot odds ต้องการแค่ 25% → <b>call คุ้ม</b>
+    </div>
+
+    <h2><span class="num">05</span>SPR — Stack-to-Pot Ratio</h2>
+    <p class="lead">บอกว่า "ควรพร้อมลงหมดหน้าตักแค่ไหน" — คำนวณบน flop</p>
+    <div class="grid2">
+      <div class="box flat">
+        <div class="formula">SPR = หน้าตักที่เหลือ (effective) ÷ กองกลาง</div>
+        <table style="margin-top:6px">
+          <thead><tr><th>SPR</th><th>ความหมาย</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag r">ต่ำ &lt;4</span></td><td>คอมมิตง่าย — top pair ดีๆ ก็ลงหมดได้</td></tr>
+            <tr><td><span class="tag a">กลาง 4–8</span></td><td>ต้องไพ่แข็งขึ้น (two pair+, draw แรง)</td></tr>
+            <tr><td><span class="tag g">สูง &gt;8</span></td><td>ต้องชุดใหญ่ (set+) ถึงจะลงหมด — เล่นระวัง</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="box flat">
+        <h3 style="margin-top:0">คำนวณ SPR</h3>
+        <div class="calc">
+          <div class="row" style="margin:4px 0">
+            <label>หน้าตักเหลือ <input type="number" id="sprStack" value="800"></label>
+            <label>กองกลาง <input type="number" id="sprPot" value="200"></label>
+          </div>
+          <button class="btn" onclick="calcSPR()">คำนวณ</button>
+          <div class="out" id="sprOut"></div>
+        </div>
+      </div>
+    </div>
+
+    <h2><span class="num">06</span>C-bet, Bluff &amp; Value</h2>
+    <div class="grid3">
+      <div class="box flat">
+        <h3 style="margin-top:0">C-bet (Continuation)</h3>
+        <p style="font-size:13px;margin:0">เป็นคนที่ raise ก่อน flop แล้ว "เดิมพันต่อ" บน flop — กดดันคู่ต่อสู้ที่พลาด flop ทำงานดีเมื่อ <b>board แห้ง</b> (A♠ 7♦ 2♣) และตอนเล่นตัวต่อตัว</p>
+      </div>
+      <div class="box flat">
+        <h3 style="margin-top:0">Value Bet</h3>
+        <p style="font-size:13px;margin:0">เดิมพันเพื่อให้ไพ่ที่ <b>แย่กว่า</b> เรา call — ถามตัวเองว่า "ไพ่อะไรที่แย่กว่าเราจะยอมจ่าย?" ถ้ามีเยอะ → bet ใหญ่ได้</p>
+      </div>
+      <div class="box flat">
+        <h3 style="margin-top:0">Bluff &amp; Semi-bluff</h3>
+        <p style="font-size:13px;margin:0"><b>Bluff:</b> เดิมพันด้วยไพ่อ่อนให้คู่ต่อสู้หมอบ. <b>Semi-bluff:</b> บลัฟทั้งที่ยังมี draw — ชนะได้สองทาง (เขาหมอบ หรือเราติด draw)</p>
+      </div>
+    </div>
+
+    <h2><span class="num">07</span>เล่นแต่ละ Street: Flop · Turn · River</h2>
+    <div class="box flat">
+      <h3 style="margin-top:0">🟢 Flop (3 ใบแรก)</h3>
+      <ul class="clean" style="font-size:13.5px">
+        <li>ประเมิน <b>texture</b>: แห้ง (dry) หรือเปียก (wet/มี draw เยอะ)</li>
+        <li>เป็นคน aggressor preflop → C-bet ได้บ่อยบน board แห้ง</li>
+        <li>มี draw แรง → semi-bluff; มี top pair → bet เพื่อ value/ป้องกัน</li>
+      </ul>
+      <h3>🟡 Turn (ใบที่ 4)</h3>
+      <ul class="clean" style="font-size:13.5px">
+        <li>เงินเริ่มใหญ่ — การตัดสินใจสำคัญขึ้น</li>
+        <li>"Double barrel" = bet ต่อจาก flop ถ้าเรื่องยังเข้าทางเรา</li>
+        <li>ไพ่เปลี่ยน texture (scare card) ใช้เป็นโอกาสบลัฟได้</li>
+      </ul>
+      <h3>🔴 River (ใบที่ 5)</h3>
+      <ul class="clean" style="font-size:13.5px">
+        <li>ไม่มี draw แล้ว — ไพ่นิ่ง ตัดสินใจ value หรือ bluff ล้วน</li>
+        <li>Value bet: ถามว่าไพ่แย่กว่าจะ call ไหม</li>
+        <li>Bluff: ต้องเล่าเรื่อง (story) ให้สมเหตุผลกับ action ที่ผ่านมา</li>
+        <li>โดน bet ใหญ่ → ใช้ pot odds + อ่าน range ตัดสิน call/fold</li>
+      </ul>
+    </div>
+
+    <div class="box tip" style="font-size:13.5px">
+      <b>เช็กลิสต์ก่อนตัดสินใจทุกตา:</b> ตำแหน่งฉัน? · range คู่ต่อสู้กว้างแค่ไหน? · equity ฉันเทียบ pot odds? · SPR เท่าไหร่? · ถ้า bet ฉันต้องการ value หรือ bluff?
+    </div>
+  </section>
+
+  <!-- ============ ประเมินไพ่ ============ -->
+  <section class="panel" id="eval">
+    <h2>ตัวประเมินไพ่ (Hand Evaluator)</h2>
+    <p class="lead">ใส่ไพ่ 5–7 ใบ ระบบหาไพ่ดีที่สุด 5 ใบให้ — รูปแบบ <code>As Kh Qd Jc Ts</code> (A,K,Q,J,T,9..2 + s/h/d/c)</p>
+    <div class="row">
+      <input id="evalInput" style="flex:1;min-width:230px" value="As Ks Qs Js Ts 2h 7d">
+      <button class="btn" onclick="runEval()">ประเมิน</button>
+      <button class="btn ghost" onclick="randomEval()">🎲 สุ่ม 7 ใบ</button>
+    </div>
+    <div id="evalOut"></div>
+    <div class="box tip" style="font-size:13.5px">
+      <b>ทำงานยังไง?</b> ลองทุกชุด 5 ใบ (C(7,5)=21 ชุด) ให้คะแนน <code>[หมวด, ตัวตัดสิน…]</code> แล้วเลือกชุดสูงสุด — เป็นตรรกะเดียวกับที่ตัดสิน showdown บนโต๊ะจริง
+    </div>
+  </section>
+
+  <!-- ============ ODDS ============ -->
+  <section class="panel" id="odds">
+    <h2>เครื่องคำนวณ Odds / Equity</h2>
+    <p class="lead">Monte Carlo — สุ่มไพ่ที่เหลือซ้ำหลายพันรอบ แล้วนับ % ชนะ</p>
+    <div class="grid2">
+      <div class="box flat">
+        <label>ไพ่ในมือเรา (2 ใบ)</label>
+        <input id="heroIn" value="Ah Kh" style="width:100%;margin-top:4px">
+      </div>
+      <div class="box flat">
+        <label>ไพ่กลางที่เปิดแล้ว (0–5 ใบ)</label>
+        <input id="boardIn" value="" placeholder="ว่าง=preflop เช่น Qh 7s 2d" style="width:100%;margin-top:4px">
+      </div>
+    </div>
+    <div class="row">
+      <label>คู่ต่อสู้:
+        <select id="oppCount"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>8</option></select></label>
+      <label>หรือระบุไพ่คู่ต่อสู้:
+        <input id="villIn" placeholder="เช่น Qc Qd" style="width:110px"></label>
+      <label>รอบจำลอง:
+        <select id="iters"><option value="5000">5,000</option><option value="20000" selected>20,000</option><option value="60000">60,000</option></select></label>
+      <button class="btn" onclick="runOdds()">คำนวณ</button>
+    </div>
+    <div id="oddsOut"></div>
+    <div class="box tip" style="font-size:13.5px">
+      <b>อ่านผล:</b> ถ้า Equity (win + ครึ่งของ tie) &gt; Pot Odds ที่ต้องจ่าย → call คุ้มในระยะยาว เช่น จ่าย 100 ชิงกอง 300 → ต้องการ 25%
+    </div>
+  </section>
+
+  <!-- ============ โต๊ะเล่น ============ -->
+  <section class="panel" id="play">
+    <h2>โต๊ะ Texas Hold'em — คุณ vs บอท</h2>
+    <div class="row">
+      <label>จำนวนบอท: <select id="botCount"><option>1</option><option selected>3</option><option>5</option></select></label>
+      <label>หน้าตักเริ่มต้น: <select id="startStack"><option>1000</option><option selected>2000</option><option>5000</option></select></label>
+      <button class="btn" onclick="newGame()">🔄 เริ่มเกมใหม่</button>
+    </div>
+    <div class="felt" id="tableWrap">
+      <div class="ring"></div>
+      <div class="board-area" id="boardArea"><div class="muted">กด "เริ่มเกมใหม่" เพื่อเริ่มเล่น</div></div>
+      <div id="seatLayer"></div>
+    </div>
+    <div class="controls" id="controls"></div>
+    <div class="logbox" id="gameLog"></div>
+  </section>
+</main>
+
+<script src="poker-engine.js"></script>
+<script src="poker-game.js"></script>
+<script>
+const P = window.Poker;
+
+/* ---------- เรนเดอร์ไพ่ ---------- */
+function cardHTML(card, cls){
+  if(!card) return '';
+  const red = P.isRed(card);
+  return `<div class="card ${red?'red':'black'} ${cls||''}">
+    <div class="r">${P.RANK_LABEL[card.rank]}</div><div class="s">${P.SUIT_SYMBOL[card.suit]}</div></div>`;
+}
+function backHTML(cls){ return `<div class="card back ${cls||''}"><div class="r">?</div><div class="s">♠</div></div>`; }
+
+/* ---------- TAB NAV ---------- */
+document.querySelectorAll('nav button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById(b.dataset.tab).classList.add('active');
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+});
+
+/* ========== พื้นฐาน: showcase ลำดับไพ่ ========== */
+function buildShowcase(){
+  const C=(r,s)=>P.makeCard(r,s);
+  const samples=[
+    ['รอยัลฟลัช','10-J-Q-K-A ดอกเดียว — สูงสุด',[C(10,3),C(11,3),C(12,3),C(13,3),C(14,3)]],
+    ['สเตรทฟลัช','เรียง 5 ใบ ดอกเดียว',[C(5,2),C(6,2),C(7,2),C(8,2),C(9,2)]],
+    ['โฟร์การ์ด','เลขเดียวกัน 4 ใบ',[C(9,0),C(9,1),C(9,2),C(9,3),C(13,0)]],
+    ['ฟูลเฮาส์','ตอง + คู่',[C(12,0),C(12,1),C(12,2),C(5,0),C(5,3)]],
+    ['ฟลัช','ดอกเดียว 5 ใบ (ไม่เรียง)',[C(14,1),C(11,1),C(8,1),C(5,1),C(2,1)]],
+    ['สเตรท','เรียง 5 ใบ (คละดอก)',[C(6,0),C(7,1),C(8,2),C(9,3),C(10,0)]],
+    ['ตอง','เลขเดียวกัน 3 ใบ',[C(8,0),C(8,1),C(8,2),C(14,0),C(4,3)]],
+    ['ทูแพร์','คู่สองชุด',[C(13,0),C(13,1),C(6,2),C(6,3),C(9,0)]],
+    ['วันแพร์','คู่หนึ่งชุด',[C(14,0),C(14,1),C(10,2),C(7,3),C(3,0)]],
+    ['ไพ่สูง','ไม่เข้าอะไร ใช้ใบสูงตัดสิน',[C(14,0),C(11,1),C(8,2),C(5,3),C(2,0)]],
+  ];
+  let html='<table><thead><tr><th style="width:40px">#</th><th>ชื่อ</th><th>ตัวอย่าง</th></tr></thead><tbody>';
+  samples.forEach((s,i)=>{
+    html+=`<tr><td style="color:var(--accent);font-weight:700">${i+1}</td>
+      <td><b>${s[0]}</b><br><span class="muted" style="font-size:12.5px">${s[1]}</span></td>
+      <td><div class="hand-row">${s[2].map(c=>cardHTML(c,'sm')).join('')}</div></td></tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('rankShowcase').innerHTML=html;
+}
+buildShowcase();
+
+/* ========== กลยุทธ์: Chen formula + range chart ========== */
+function chenScore(hi, lo, suited, pair){
+  const hv=(r)=> r===14?10 : r===13?8 : r===12?7 : r===11?6 : r/2;
+  if(pair){ return Math.max(hv(hi)*2, 5); }
+  let s=hv(hi);
+  if(suited) s+=2;
+  const g=hi-lo-1; // จำนวนช่องว่าง
+  s -= (g===0?0 : g===1?1 : g===2?2 : g===3?4 : 5);
+  if(g<=1 && hi<12) s+=1; // straight bonus (ทั้งคู่ต่ำกว่า Q)
+  return Math.round(s);
+}
+function tierOf(score){
+  if(score>=12) return ['prem','Premium'];
+  if(score>=9)  return ['strong','Strong'];
+  if(score>=7)  return ['play','Playable'];
+  if(score>=5)  return ['spec','Speculative'];
+  return ['fold','Fold'];
+}
+function buildRangeChart(){
+  const ranks=[14,13,12,11,10,9,8,7,6,5,4,3,2];
+  const lbl={14:'A',13:'K',12:'Q',11:'J',10:'T',9:'9',8:'8',7:'7',6:'6',5:'5',4:'4',3:'3',2:'2'};
+  let html='<table class="range"><tbody>';
+  for(let r=0;r<13;r++){
+    html+='<tr>';
+    for(let c=0;c<13;c++){
+      let hi,lo,suited,pair,name;
+      if(r===c){ pair=true; hi=lo=ranks[r]; name=lbl[hi]+lbl[hi]; }
+      else if(r<c){ suited=true; hi=ranks[r]; lo=ranks[c]; name=lbl[hi]+lbl[lo]+'s'; }
+      else { suited=false; hi=ranks[c]; lo=ranks[r]; name=lbl[hi]+lbl[lo]+'o'; }
+      const sc=chenScore(hi,lo,suited,pair);
+      const [cls]=tierOf(sc);
+      html+=`<td><div class="rc ${cls}" onclick="showHand('${name}',${sc})" title="${name} • Chen ${sc}">${name}</div></td>`;
+    }
+    html+='</tr>';
+  }
+  html+='</tbody></table>';
+  document.getElementById('rangeChart').innerHTML=html;
+}
+function showHand(name, sc){
+  const [cls,tname]=tierOf(sc);
+  const combos = name.length===2 ? 6 : (name.endsWith('s')?4:12);
+  const advice={
+    'Premium':'เปิด raise / 3bet ได้จากทุกตำแหน่ง เป็นไพ่ทำเงินหลัก',
+    'Strong':'เปิด raise ได้แทบทุกตำแหน่ง เล่นมั่นใจ',
+    'Playable':'เปิดในตำแหน่งกลาง-หลัง หรือ call เมื่อราคาดี',
+    'Speculative':'เล่นในตำแหน่งหลัง/เมื่อหลายคนลงถูกๆ หวัง flop ติดชุดใหญ่',
+    'Fold':'ทิ้งเป็นค่าเริ่มต้น เว้นแต่ในกระดาน blinds vs steal',
+  }[tname];
+  document.getElementById('handDetail').innerHTML=
+    `<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <div class="rc ${cls}" style="width:48px;height:48px;font-size:14px">${name}</div>
+      <div>
+        <div><b style="font-size:16px">${name}</b> &nbsp;<span class="tag ${cls==='prem'||cls==='strong'?'g':cls==='play'?'a':'r'}">${tname}</span></div>
+        <div class="muted" style="font-size:13px">Chen score = <b>${sc}</b> · ${combos} combos · ${advice}</div>
+      </div>
+    </div>`;
+}
+buildRangeChart();
+
+/* ---- แผนภาพตำแหน่งรอบโต๊ะ (2–9 คน) ---- */
+// ลำดับที่นั่งตามเข็มนาฬิกาเริ่มจาก BTN (ปุ่ม) → SB → BB → ... → CO → กลับ BTN
+const POS_LABELS={
+  2:['BTN/SB','BB'],
+  3:['BTN','SB','BB'],
+  4:['BTN','SB','BB','UTG'],
+  5:['BTN','SB','BB','UTG','CO'],
+  6:['BTN','SB','BB','UTG','HJ','CO'],
+  7:['BTN','SB','BB','UTG','MP','HJ','CO'],
+  8:['BTN','SB','BB','UTG','UTG+1','MP','HJ','CO'],
+  9:['BTN','SB','BB','UTG','UTG+1','UTG+2','MP','HJ','CO'],
+};
+function posCat(lbl){
+  if(lbl==='BTN'||lbl==='BTN/SB'||lbl==='CO'||lbl==='HJ') return 'late';
+  if(lbl==='MP'||lbl==='LJ') return 'mid';
+  if(lbl==='SB'||lbl==='BB') return 'blind';
+  return 'early'; // UTG, UTG+1, UTG+2
+}
+function catName(c){return {late:'ได้เปรียบ',mid:'กลาง',early:'เสียเปรียบ',blind:'blind'}[c];}
+function buildPositionDiagram(n){
+  const labels=POS_LABELS[n];
+  const step=360/n, rx=41, ry=39;
+  let html='<div class="ring2"></div>';
+  labels.forEach((lbl,i)=>{
+    const th=(90+i*step)*Math.PI/180;       // เริ่มที่ด้านล่าง วนตามเข็ม
+    const x=50+rx*Math.cos(th), y=50+ry*Math.sin(th);
+    const cat=posCat(lbl);
+    const isBtn=(lbl==='BTN'||lbl==='BTN/SB');
+    html+=`<div class="pseat" style="left:${x}%;top:${y}%">
+      <div class="pmark ${cat} ${isBtn?'dealer-edge':''}">${lbl}</div>
+      <div class="plbl">${catName(cat)}</div></div>`;
+  });
+  html+=`<div class="center-chip">โต๊ะ<br>${n} คน</div>`;
+  document.getElementById('posTable').innerHTML=html;
+  document.querySelectorAll('#posBtns .posbtn').forEach(b=>b.classList.toggle('active',+b.dataset.n===n));
+}
+(function initPosButtons(){
+  let html='';
+  for(let n=2;n<=9;n++) html+=`<button class="posbtn" data-n="${n}" onclick="buildPositionDiagram(${n})">${n}</button>`;
+  document.getElementById('posBtns').innerHTML=html;
+  buildPositionDiagram(6); // ค่าเริ่มต้น 6-max
+})();
+
+/* ---- mini calculators ---- */
+function calcPotOdds(){
+  const pot=+document.getElementById('poPot').value, call=+document.getElementById('poCall').value;
+  if(call<=0){document.getElementById('poOut').textContent='ใส่ค่า call ให้ถูก';return;}
+  const req=call/(pot+call)*100;
+  const ratio=(pot/call).toFixed(1);
+  document.getElementById('poOut').innerHTML=`ต้องการ equity ≥ <b>${req.toFixed(1)}%</b> &nbsp;(pot odds ${ratio} : 1)`;
+}
+function calcOuts(){
+  const o=+document.getElementById('outsN').value;
+  // rule of 4 จะ overestimate เมื่อ outs เยอะ — ปรับแก้สำหรับ outs > 8
+  const flop = o<=8 ? o*4 : o*4 - (o-8);
+  document.getElementById('outsOut').innerHTML=
+    `flop→river ≈ <b>${flop}%</b> &nbsp;|&nbsp; turn→river ≈ <b>${o*2}%</b>`;
+}
+function calcSPR(){
+  const st=+document.getElementById('sprStack').value, pot=+document.getElementById('sprPot').value;
+  if(pot<=0){document.getElementById('sprOut').textContent='ใส่กองกลางให้ถูก';return;}
+  const spr=st/pot;
+  let g = spr<4?'ต่ำ — คอมมิตง่าย (top pair ดีๆ ก็ลงหมดได้)'
+        : spr<=8?'กลาง — ต้อง two pair+ หรือ draw แรง'
+        : 'สูง — ต้อง set+ ถึงควรลงหมด';
+  document.getElementById('sprOut').innerHTML=`SPR = <b>${spr.toFixed(1)}</b> → ${g}`;
+}
+calcPotOdds(); calcOuts(); calcSPR();
+
+/* ========== ประเมินไพ่ ========== */
+function parseHand(str){ return str.trim().split(/\s+/).map(P.parseCard).filter(Boolean); }
+function runEval(){
+  const cards=parseHand(document.getElementById('evalInput').value);
+  const out=document.getElementById('evalOut');
+  if(cards.length<5){ out.innerHTML='<div class="box" style="color:var(--red)">⚠️ ต้องใส่อย่างน้อย 5 ใบ</div>'; return; }
+  if(cards.length>7){ out.innerHTML='<div class="box" style="color:var(--red)">⚠️ ใส่ได้ไม่เกิน 7 ใบ</div>'; return; }
+  const best=P.evaluateBest(cards);
+  const bestIds=new Set(best.cards.map(P.cardId));
+  out.innerHTML=`<div class="box">
+      <div class="muted" style="font-size:12.5px">ไพ่ที่ใส่ (ใบที่ถูกใช้มีกรอบ):</div>
+      <div class="hand-row">${cards.map(c=>cardHTML(c,bestIds.has(P.cardId(c))?'hl':'')).join('')}</div>
+      <div style="font-size:20px;color:var(--accent-d);margin-top:12px"><b>${best.categoryName}</b></div>
+      <div class="muted" style="font-size:12.5px;margin-top:6px">ไพ่ดีที่สุด 5 ใบ:</div>
+      <div class="hand-row">${best.cards.map(c=>cardHTML(c,'sm hl')).join('')}</div>
+      <div class="faint" style="font-size:12px;margin-top:6px">รหัสคะแนน: [${best.score.join(', ')}]</div>
+    </div>`;
+}
+function randomEval(){
+  const d=P.shuffle(P.freshDeck()).slice(0,7);
+  const suitChar=['c','d','h','s'];
+  document.getElementById('evalInput').value=d.map(c=>P.RANK_LABEL[c.rank].replace('10','T')+suitChar[c.suit]).join(' ');
+  runEval();
+}
+runEval();
+
+/* ========== ODDS ========== */
+function runOdds(){
+  const hero=parseHand(document.getElementById('heroIn').value);
+  const board=parseHand(document.getElementById('boardIn').value);
+  const villStr=document.getElementById('villIn').value.trim();
+  const vill=villStr?parseHand(villStr):null;
+  const out=document.getElementById('oddsOut');
+  if(hero.length!==2){ out.innerHTML='<div class="box" style="color:var(--red)">⚠️ ไพ่ในมือต้อง 2 ใบพอดี</div>'; return; }
+  if(board.length>5){ out.innerHTML='<div class="box" style="color:var(--red)">⚠️ ไพ่กลางได้ไม่เกิน 5 ใบ</div>'; return; }
+  if(vill && vill.length!==2){ out.innerHTML='<div class="box" style="color:var(--red)">⚠️ ไพ่คู่ต่อสู้ต้อง 2 ใบ หรือเว้นว่าง</div>'; return; }
+  out.innerHTML='<div class="box muted">⏳ กำลังจำลอง...</div>';
+  setTimeout(()=>{
+    const res=P.monteCarlo({heroHole:hero,board:board,
+      opponents:parseInt(document.getElementById('oppCount').value,10),
+      villainHole:vill,iterations:parseInt(document.getElementById('iters').value,10)});
+    const eq=(res.win+res.tie/2).toFixed(1);
+    out.innerHTML=`<div class="box">
+      <div class="row" style="margin-top:0">
+        <div><span class="muted" style="font-size:12px">มือเรา</span><div class="hand-row">${hero.map(c=>cardHTML(c,'sm')).join('')}</div></div>
+        ${board.length?`<div><span class="muted" style="font-size:12px">ไพ่กลาง</span><div class="hand-row">${board.map(c=>cardHTML(c,'sm')).join('')}</div></div>`:''}
+        ${vill?`<div><span class="muted" style="font-size:12px">คู่ต่อสู้</span><div class="hand-row">${vill.map(c=>cardHTML(c,'sm')).join('')}</div></div>`:`<div class="muted">vs ${document.getElementById('oppCount').value} คนสุ่ม</div>`}
+      </div>
+      <div class="bar">
+        <div class="w" style="width:${res.win}%">ชนะ ${res.win.toFixed(1)}%</div>
+        <div class="t" style="width:${res.tie}%">${res.tie>4?'เสมอ '+res.tie.toFixed(1)+'%':''}</div>
+        <div class="l" style="width:${res.lose}%">แพ้ ${res.lose.toFixed(1)}%</div>
+      </div>
+      <div style="font-size:17px;margin-top:8px">⚡ <b>Equity ≈ ${eq}%</b> <span class="faint" style="font-size:12.5px">(${res.iterations.toLocaleString()} รอบ)</span></div>
+    </div>`;
+  },30);
+}
+runOdds();
+
+/* ========== โต๊ะเล่น ========== */
+let game=null, revealAll=false;
+function newGame(){
+  revealAll=false;
+  const nBots=parseInt(document.getElementById('botCount').value,10);
+  const stack=parseInt(document.getElementById('startStack').value,10);
+  const players=[{name:'คุณ',isHuman:true,stack:stack}];
+  const botNames=['บอท Alex','บอท Bea','บอท Cody','บอท Dee','บอท Eve'];
+  for(let i=0;i<nBots;i++) players.push({name:botNames[i],isHuman:false,stack:stack});
+  game=new HoldemGame({players:players,smallBlind:10,bigBlind:20});
+  game.startHand(); loop();
+}
+function nextHand(){ if(!game)return; revealAll=false; game.startHand(); loop(); }
+function loop(){
+  render();
+  if(!game) return;
+  if(game.stage==='handover'){ revealAll=true; render(); return; }
+  if(game.stage==='gameover'){ render(); return; }
+  if(game.needHumanAction()){ render(); return; }
+  if(game.currentActor() && !game.currentActor().isHuman){
+    setTimeout(()=>{ game.stepBot(); loop(); }, 600);
+  }
+}
+function humanAct(action){
+  if(action==='raise') game.act('raise', parseInt(document.getElementById('raiseSlider').value,10));
+  else game.act(action);
+  loop();
+}
+/* ตำแหน่งที่นั่งรอบโต๊ะ (เป็น % ของพื้นที่โต๊ะ) — index 0 = เราเสมอ อยู่ล่างกลาง */
+const SEAT_POS={
+  2:[[50,90],[50,8]],
+  3:[[50,90],[13,27],[87,27]],
+  4:[[50,91],[9,43],[50,7],[91,43]],
+  5:[[50,91],[9,57],[21,15],[79,15],[91,57]],
+  6:[[50,92],[8,57],[20,15],[50,6],[80,15],[92,57]],
+};
+function render(){
+  if(!game) return;
+  const n=game.players.length;
+  const pos=SEAT_POS[n]||SEAT_POS[6];
+  let layer='';
+  game.players.forEach((p,i)=>{
+    const [l,t]=pos[i]||[50,50];
+    layer+=`<div class="seat-abs" style="left:${l}%;top:${t}%">${seatHTML(p,p.isHuman)}</div>`;
+    // ชิปเดิมพันลอยระหว่างที่นั่งกับกองกลาง
+    if(p.betThisRound>0 && !p.folded){
+      const cl=l+(50-l)*0.34, ct=t+(47-t)*0.34;
+      layer+=`<div class="bet-chip" style="left:${cl}%;top:${ct}%">🪙 ${p.betThisRound}</div>`;
+    }
+  });
+  document.getElementById('seatLayer').innerHTML=layer;
+  const ba=document.getElementById('boardArea');
+  let bh=game.board.map(c=>cardHTML(c,'lg')).join('');
+  for(let i=game.board.length;i<5;i++) bh+=backHTML('lg');
+  ba.innerHTML=`<div class="hand-row" style="justify-content:center">${bh}</div>
+    <div class="pot">กองกลาง ${game.pot} · ${stageTH(game.stage)}</div>`;
+  document.getElementById('gameLog').innerHTML=game.log.slice(-40).map(l=>`<div>${l}</div>`).join('');
+  document.getElementById('gameLog').scrollTop=999999;
+  renderControls();
+}
+function stageTH(s){return {preflop:'Preflop',flop:'Flop',turn:'Turn',river:'River',showdown:'Showdown',handover:'จบมือ',gameover:'จบเกม',idle:'-'}[s]||s;}
+function seatHTML(p,isHero){
+  const turn=(game.currentActor()&&game.currentActor().id===p.id&&game.stage!=='handover')?'turn':'';
+  const folded=p.folded?'folded':'';
+  const isDealer=(game.button===p.id);
+  let cards='';
+  if(p.inHand){
+    cards=(isHero||revealAll)?p.hole.map(c=>cardHTML(c,'sm')).join(''):p.hole.map(()=>backHTML('sm')).join('');
+  }
+  let handName='';
+  if(revealAll && p.inHand && !p.folded && game.board.length===5 && p.hole.length===2){
+    try{ handName=`<div class="faint" style="font-size:10.5px">${P.evaluateBest([...p.hole,...game.board]).categoryName.split('(')[0]}</div>`; }catch(e){}
+  }
+  return `<div class="seat ${isHero?'hero':''} ${turn} ${folded}">
+    <div class="nm">${p.name}${isDealer?'<span class="dealer">D</span>':''}</div>
+    <div class="hand-row" style="justify-content:center">${cards||'<span class="faint">—</span>'}</div>
+    ${handName}
+    <div class="st">💵 ${p.stack}</div>
+    <div class="ac">${p.allIn?'🔴 ออลอิน':p.lastAction||''}</div></div>`;
+}
+function renderControls(){
+  const c=document.getElementById('controls');
+  if(!game){ c.innerHTML=''; return; }
+  if(game.stage==='gameover'){
+    const w=game.players.filter(p=>p.stack>0)[0];
+    c.innerHTML=`<div style="text-align:center"><b>🏆 จบเกม — ${w?w.name:''} กวาดเรียบ</b><br><br><button class="btn" onclick="newGame()">เริ่มเกมใหม่</button></div>`;
+    return;
+  }
+  if(game.stage==='handover'){
+    let msg=''; const r=game.lastResult;
+    if(r){ msg = r.showdown
+      ? r.pots.map(pt=>`${pt.winners.join(', ')} ชนะ ${pt.amount} ด้วย <b style="color:var(--accent-d)">${pt.hand}</b>`).join('<br>')
+      : `${r.winners.join(', ')} ชนะ ${r.pot} (คนอื่นหมอบหมด)`; }
+    c.innerHTML=`<div style="text-align:center"><div style="margin-bottom:10px">${msg}</div><button class="btn" onclick="nextHand()">▶ มือต่อไป</button></div>`;
+    return;
+  }
+  if(!game.needHumanAction()){ c.innerHTML=`<div class="muted" style="text-align:center">⏳ รอผู้เล่นอื่น…</div>`; return; }
+  const hero=game.players[0], need=game.toCall(hero), legal=game.legalActions(hero);
+  const minTo=Math.min(game.minRaiseTo(),game.maxRaiseTo(hero)), maxTo=game.maxRaiseTo(hero);
+  let html=`<div class="row" style="justify-content:center;margin-top:0">`;
+  if(legal.includes('fold')) html+=`<button class="btn danger" onclick="humanAct('fold')">หมอบ</button>`;
+  if(legal.includes('check')) html+=`<button class="btn ghost" onclick="humanAct('check')">เช็ค</button>`;
+  if(legal.includes('call')) html+=`<button class="btn" onclick="humanAct('call')">เรียก ${need}</button>`;
+  html+=`</div>`;
+  if(legal.includes('raise')){
+    html+=`<div class="row" style="justify-content:center;margin-bottom:0">
+      <span class="muted">เพิ่มเป็น</span>
+      <input type="range" id="raiseSlider" min="${minTo}" max="${maxTo}" value="${minTo}" step="${game.bigBlind}" oninput="document.getElementById('raiseVal').textContent=this.value" style="width:160px">
+      <b id="raiseVal" style="color:var(--accent-d);min-width:50px">${minTo}</b>
+      <button class="btn" onclick="humanAct('raise')">เพิ่ม / ออลอิน</button></div>`;
+  }
+  c.innerHTML=html;
+}
+</script>
+</body>
+</html>
