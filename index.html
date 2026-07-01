@@ -158,6 +158,10 @@
     border:1px solid var(--border2);border-radius:215px;box-shadow:var(--shadow)}
   .felt .ring{position:absolute;inset:26px;border:1.5px solid #cfe3d8;border-radius:190px;pointer-events:none}
   .seat-abs{position:absolute;transform:translate(-50%,-50%);width:138px;z-index:3}
+  .felt.many .seat-abs{width:116px}
+  .felt.many .seat{padding:6px 5px}
+  .felt.many .seat .nm{font-size:12px}
+  .felt.many .seat .card.sm{width:28px;height:40px;font-size:11px}
   .seat{background:var(--surface);border:1px solid var(--border2);border-radius:12px;
     padding:8px 7px;text-align:center;transition:.15s;box-shadow:0 1px 3px rgba(20,40,30,.08)}
   .seat.hero{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
@@ -234,6 +238,39 @@
   .cl-entry ul{margin:5px 0 0;padding-left:20px;font-size:13.5px}
   .cl-entry ul li{margin:3px 0}
   .modal-f{padding:12px 18px;border-top:1px solid var(--border);text-align:right}
+  /* ---- โค้ชสรุปมือ (เน้นภาพ) ---- */
+  .coach{text-align:left;background:var(--surface2);border:1px solid var(--border);border-radius:12px;
+    padding:12px 13px;margin:10px 0}
+  .coach-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .coach-head .hcards{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+  .coach-score{display:flex;align-items:center;gap:8px}
+  .score-dots{display:flex;gap:4px}
+  .score-dots i{width:11px;height:11px;border-radius:50%;display:inline-block}
+  .score-dots i.ok{background:var(--accent)} .score-dots i.warn{background:var(--amber)}
+  .coach-score b{font-size:13px}
+  .cadv{display:grid;grid-template-columns:56px 1fr 34px;gap:10px;align-items:center;
+    padding:10px 0;border-top:1px solid var(--border)}
+  .cadv .street{font-size:12px;font-weight:700;color:var(--text)}
+  .cadv .act{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:6px;margin-top:4px}
+  .cadv .act.fold{background:#ececec;color:#777}
+  .cadv .act.check,.cadv .act.call{background:#e4eef5;color:#3a6f96}
+  .cadv .act.raise{background:var(--accent-soft);color:var(--accent-d)}
+  .eq-track{position:relative;height:18px;border-radius:9px;background:#e7ebe7;overflow:hidden}
+  .eq-fill{height:100%;border-radius:9px 0 0 9px}
+  .eq-fill.ok{background:var(--accent)} .eq-fill.warn{background:var(--amber)}
+  .eq-mark{position:absolute;top:-2px;bottom:-2px;width:2.5px;background:var(--lose);z-index:2}
+  .eq-mark::after{content:'คุ้มทุน';position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+    font-size:8.5px;color:var(--lose);white-space:nowrap}
+  .eq-lab{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-top:4px}
+  .eq-lab b{color:var(--text)}
+  .cadv .note{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .cadv .verdict{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;font-size:16px;color:#fff;font-weight:800}
+  .cadv .verdict.ok{background:var(--accent)} .cadv .verdict.warn{background:var(--amber)}
+  .coach-tip{font-size:11.5px;color:var(--muted);border-top:1px dashed var(--border);padding-top:8px;margin-top:8px;
+    display:flex;align-items:center;gap:8px}
+  .coach-tip .mini{display:inline-flex;align-items:center;gap:3px}
+  .coach-tip .sw{width:10px;height:10px;border-radius:3px;display:inline-block}
 </style>
 </head>
 <body>
@@ -507,7 +544,13 @@
   <section class="panel" id="play">
     <h2>โต๊ะ Texas Hold'em — คุณ vs บอท</h2>
     <div class="row">
-      <label>จำนวนบอท: <select id="botCount"><option>1</option><option selected>3</option><option>5</option></select></label>
+      <label>จำนวนบอท:
+        <select id="botCount">
+          <option>1</option><option>2</option><option selected>3</option><option>4</option>
+          <option>5</option><option>6</option><option>7</option><option>8</option>
+        </select>
+        <span class="faint" style="font-size:11.5px">(รวมคุณ 2–9 คน)</span>
+      </label>
       <label>หน้าตักเริ่มต้น: <select id="startStack"><option>1000</option><option selected>2000</option><option>5000</option></select></label>
       <button class="btn" onclick="newGame()">🔄 เริ่มเกมใหม่</button>
     </div>
@@ -532,8 +575,17 @@ const P = window.Poker;
  * วิธีใช้เมื่ออัปโค้ดใหม่: เพิ่ม entry ใหม่ไว้บนสุดของ CHANGELOG แล้วอัป APP_VERSION
  * ให้ตรงกับ v ของ entry บนสุด — ผู้ใช้เดิมจะเห็นป๊อปอัปสรุปสิ่งที่อัปเดตอัตโนมัติ
  */
-let APP_VERSION = '1.5.0';   // fallback หาก fetch version.json ไม่ได้ (เช่น เปิดผ่าน file://)
+let APP_VERSION = '1.7.0';   // fallback หาก fetch version.json ไม่ได้ (เช่น เปิดผ่าน file://)
 let CHANGELOG = [
+  {v:'1.7.0', date:'2026-07-01', title:'เลือกจำนวนผู้เล่นบนโต๊ะได้', items:[
+    'โต๊ะเล่นเลือกได้ตั้งแต่ 2 ถึง 9 คน (รวมคุณ)',
+    'ที่นั่งจัดวางรอบโต๊ะให้พอดีอัตโนมัติตามจำนวนคน',
+  ]},
+  {v:'1.6.0', date:'2026-07-01', title:'โค้ชแนะนำหลังเล่นจบ', items:[
+    'หลังจบแต่ละมือ มีสรุปเป็นภาพให้ว่าเราตัดสินใจได้ดีหรือควรปรับตรงไหน',
+    'แสดงแถบเทียบโอกาสชนะกับเส้นคุ้มทุน พร้อมไอคอน ✓/⚠ ในแต่ละจังหวะ',
+    'บอกว่าควรหมอบ เรียก หรือเพิ่มเดิมพัน โดยดูจากโอกาสชนะและตำแหน่งที่นั่ง',
+  ]},
   {v:'1.5.0', date:'2026-07-01', title:'แจ้งเตือนอัปเดต', items:[
     'เห็นสรุปสิ่งที่ปรับปรุงใหม่ทันทีเมื่อเข้าเว็บ',
     'ย้อนดูประวัติการอัปเดตทั้งหมดได้ตลอด',
@@ -582,10 +634,15 @@ function showChangelog(force){
     entries = CHANGELOG; heading = 'ประวัติการอัปเดตทั้งหมด';
   } else {
     if(seen === APP_VERSION) return;               // เห็นเวอร์ชันล่าสุดแล้ว ไม่เด้ง
-    const idx = CHANGELOG.findIndex(e=>e.v===seen);
-    entries = (idx===-1) ? [CHANGELOG[0]] : CHANGELOG.slice(0, idx); // เฉพาะที่ใหม่กว่าที่เคยเห็น
+    if(!seen){                                      // เข้าครั้งแรก — แสดงประวัติทั้งหมด
+      entries = CHANGELOG;
+      heading = 'ยินดีต้อนรับสู่ Poker Lab 🃏';
+    } else {                                        // เคยเข้าแล้ว — แสดงเฉพาะที่ใหม่กว่าที่เคยเห็น
+      const idx = CHANGELOG.findIndex(e=>e.v===seen);
+      entries = (idx===-1) ? CHANGELOG : CHANGELOG.slice(0, idx);
+      heading = 'มีอัปเดตใหม่ 🎉';
+    }
     if(!entries.length) return;
-    heading = seen ? 'มีอัปเดตใหม่ 🎉' : 'ยินดีต้อนรับสู่ Poker Lab 🃏';
   }
   document.getElementById('modalMount').innerHTML = `
     <div class="modal-ov" onclick="if(event.target===this)dismissChangelog()">
@@ -859,17 +916,19 @@ runOdds();
 
 /* ========== โต๊ะเล่น ========== */
 let game=null, revealAll=false;
+let handDecisions=[];   // บันทึกการตัดสินใจของผู้เล่นในมือปัจจุบัน (สำหรับโค้ช)
 function newGame(){
   revealAll=false;
   const nBots=parseInt(document.getElementById('botCount').value,10);
   const stack=parseInt(document.getElementById('startStack').value,10);
   const players=[{name:'คุณ',isHuman:true,stack:stack}];
-  const botNames=['บอท Alex','บอท Bea','บอท Cody','บอท Dee','บอท Eve'];
+  const botNames=['บอท Alex','บอท Bea','บอท Cody','บอท Dee','บอท Eve','บอท Finn','บอท Gus','บอท Hana'];
   for(let i=0;i<nBots;i++) players.push({name:botNames[i],isHuman:false,stack:stack});
   game=new HoldemGame({players:players,smallBlind:10,bigBlind:20});
+  handDecisions=[];
   game.startHand(); loop();
 }
-function nextHand(){ if(!game)return; revealAll=false; game.startHand(); loop(); }
+function nextHand(){ if(!game)return; revealAll=false; handDecisions=[]; game.startHand(); loop(); }
 function loop(){
   render();
   if(!game) return;
@@ -881,9 +940,103 @@ function loop(){
   }
 }
 function humanAct(action){
-  if(action==='raise') game.act('raise', parseInt(document.getElementById('raiseSlider').value,10));
+  let amountTo=null;
+  if(action==='raise') amountTo=parseInt(document.getElementById('raiseSlider').value,10);
+  recordDecision(action, amountTo);      // เก็บบริบทก่อนลงมือ (โอกาสชนะ/ราคา/ตำแหน่ง)
+  if(action==='raise') game.act('raise', amountTo);
   else game.act(action);
   loop();
+}
+/* บันทึกการตัดสินใจ 1 ครั้งของผู้เล่น พร้อมคำนวณโอกาสชนะ ณ ตอนนั้น */
+function recordDecision(action, amountTo){
+  const hero=game.players[0];
+  const need=game.toCall(hero);
+  const alive=game.players.filter(p=>p.inHand&&!p.folded).length;
+  const eq=P.monteCarlo({heroHole:hero.hole, board:game.board, opponents:Math.max(1,alive-1), iterations:1200});
+  handDecisions.push({
+    stage:game.stage, action, amountTo, need,
+    equity:eq.win+eq.tie/2,
+    potOdds: need>0 ? need/(game.pot+need)*100 : 0,
+    pos:playerPosLabel(0), hole:hero.hole.slice(),
+  });
+}
+/* ข้อมูลไพ่เริ่มต้น: คะแนน Chen + ชื่อ (เช่น AKs, 72o, QQ) */
+function holeInfo(hole){
+  const a=hole[0], b=hole[1];
+  const hi=Math.max(a.rank,b.rank), lo=Math.min(a.rank,b.rank);
+  const suited=a.suit===b.suit, pair=a.rank===b.rank;
+  const R={14:'A',13:'K',12:'Q',11:'J',10:'T',9:'9',8:'8',7:'7',6:'6',5:'5',4:'4',3:'3',2:'2'};
+  return {score:chenScore(hi,lo,suited,pair), name: pair?R[hi]+R[hi]:R[hi]+R[lo]+(suited?'s':'o')};
+}
+/* ประเมินการตัดสินใจ 1 ครั้ง → {verdict, note} */
+function judgeDecision(d){
+  const info=holeInfo(d.hole);
+  let verdict='ok', note='';
+  if(d.action==='fold'){
+    if(d.potOdds>0 && d.equity>=d.potOdds+10){ verdict='warn'; note='ไพ่ยังมีลุ้น น่าจะเรียกต่อ'; }
+    else note='หมอบถูกจังหวะ';
+  } else if(d.action==='check'){
+    if(d.equity>=68){ verdict='warn'; note='ไพ่แข็ง น่าจะเดิมพันเก็บ value'; }
+    else note='เช็คพอเหมาะ';
+  } else if(d.action==='call'){
+    if(d.potOdds>0 && d.equity<d.potOdds-8){ verdict='warn'; note='ราคาไม่คุ้ม น่าจะหมอบ'; }
+    else if(d.equity>=75){ verdict='warn'; note='ไพ่แข็งมาก น่าจะเพิ่มเดิมพัน'; }
+    else note='เรียกคุ้มค่า';
+  } else if(d.action==='raise'){
+    if(d.equity<35) note='บลัฟ — ใช้แต่พอดี';
+    else if(d.equity>=60) note='เพิ่มเดิมพัน เก็บ value เยี่ยม';
+    else note='เพิ่มเดิมพัน พอเล่นได้';
+  }
+  // ก่อนเปิดไพ่: เตือนถ้าเล่นไพ่อ่อนจากตำแหน่งแรกๆ (สำคัญกว่า จึง override)
+  if(d.stage==='preflop' && d.action!=='fold'){
+    const cat=posCat(d.pos);
+    if(info.score<5 && (cat==='early'||cat==='mid')){ verdict='warn'; note=`ไพ่ ${info.name} อ่อนไปสำหรับตำแหน่ง ${d.pos}`; }
+  }
+  return {verdict, note};
+}
+/* สร้างการ์ดสรุปแบบภาพ */
+function coachHTML(){
+  if(!handDecisions.length)
+    return `<div class="coach"><b>💡 โค้ชสรุปมือนี้</b><div class="coach-tip" style="border:none;padding-top:6px">มือนี้ไม่มีการตัดสินใจให้วิเคราะห์</div></div>`;
+  const stName={preflop:'ก่อนเปิด',flop:'Flop',turn:'Turn',river:'River'};
+  const actMap={fold:'หมอบ',check:'เช็ค',call:'เรียก',raise:'เพิ่ม'};
+  const judged=handDecisions.map(d=>({d, ...judgeDecision(d)}));
+  const warns=judged.filter(j=>j.verdict==='warn').length;
+  const good=judged.length-warns;
+
+  const dots=judged.map(j=>`<i class="${j.verdict}"></i>`).join('');
+  const headline = warns===0 ? 'เล่นได้ดีทั้งมือ 👍' : `ดี ${good} · ปรับได้ ${warns}`;
+  const holeCards = handDecisions[0].hole.map(c=>cardHTML(c,'sm')).join('');
+
+  const rows = judged.map(j=>{
+    const d=j.d, eq=Math.round(d.equity), po=Math.round(d.potOdds);
+    const fill=Math.max(3,Math.min(100,eq));
+    const mark = d.potOdds>0 ? `<div class="eq-mark" style="left:${Math.min(98,po)}%"></div>` : '';
+    const right = d.potOdds>0 ? `ต้องการ <b>${po}%</b>` : '';
+    return `<div class="cadv">
+      <div><div class="street">${stName[d.stage]||d.stage}</div><span class="act ${d.action}">${actMap[d.action]||d.action}</span></div>
+      <div>
+        <div class="eq-track">${mark}<div class="eq-fill ${j.verdict}" style="width:${fill}%"></div></div>
+        <div class="eq-lab"><span>โอกาสชนะ <b>${eq}%</b></span><span>${right}</span></div>
+        <div class="note">${j.verdict==='warn'?'⚠️':'✓'} ${j.note}</div>
+      </div>
+      <div class="verdict ${j.verdict}">${j.verdict==='warn'?'!':'✓'}</div>
+    </div>`;
+  }).join('');
+
+  return `<div class="coach">
+    <div class="coach-head">
+      <span class="hcards">ไพ่คุณ ${holeCards}</span>
+      <span class="coach-score"><span class="score-dots">${dots}</span><b>${headline}</b></span>
+    </div>
+    ${rows}
+    <div class="coach-tip">
+      <span class="mini"><span class="sw" style="background:var(--accent)"></span>ดี</span>
+      <span class="mini"><span class="sw" style="background:var(--amber)"></span>ปรับได้</span>
+      <span class="mini"><span class="sw" style="background:var(--lose)"></span>เส้นคุ้มทุน</span>
+      <span style="margin-left:auto">แถบยาวเลยเส้นแดง = คุ้มที่จะเล่นต่อ</span>
+    </div>
+  </div>`;
 }
 /* ตำแหน่งที่นั่งรอบโต๊ะ (เป็น % ของพื้นที่โต๊ะ) — index 0 = เราเสมอ อยู่ล่างกลาง */
 const SEAT_POS={
@@ -892,6 +1045,9 @@ const SEAT_POS={
   4:[[50,91],[9,43],[50,7],[91,43]],
   5:[[50,91],[9,57],[21,15],[79,15],[91,57]],
   6:[[50,92],[8,57],[20,15],[50,6],[80,15],[92,57]],
+  7:[[50,92],[9,63],[11,31],[33,10],[67,10],[89,31],[91,63]],
+  8:[[50,92],[9,66],[9,38],[25,12],[50,7],[75,12],[91,38],[91,66]],
+  9:[[50,92],[8,67],[8,41],[20,16],[38,8],[62,8],[80,16],[92,41],[92,67]],
 };
 /* ตำแหน่งโป๊กเกอร์ของผู้เล่นแต่ละคน อิงจากปุ่ม Dealer (button) */
 function playerPosLabel(pid){
@@ -922,9 +1078,9 @@ function render(){
        <div class="mhero"><div class="mseat">${seatHTML(hero,true)}${mbet(hero)}</div></div>`;
   } else {
     // เดสก์ท็อป: โต๊ะวงรี วางที่นั่งรอบขอบ
-    felt.className='felt';
     const n=game.players.length;
-    const pos=SEAT_POS[n]||SEAT_POS[6];
+    felt.className='felt'+(n>=7?' many':'');   // คนเยอะ → ย่อที่นั่งกันชนกัน
+    const pos=SEAT_POS[n]||SEAT_POS[9];
     let layer='<div class="ring"></div>';
     game.players.forEach((p,i)=>{
       const [l,t]=pos[i]||[50,50];
@@ -977,7 +1133,9 @@ function renderControls(){
     if(r){ msg = r.showdown
       ? r.pots.map(pt=>`${pt.winners.join(', ')} ชนะ ${pt.amount} ด้วย <b style="color:var(--accent-d)">${pt.hand}</b>`).join('<br>')
       : `${r.winners.join(', ')} ชนะ ${r.pot} (คนอื่นหมอบหมด)`; }
-    c.innerHTML=`<div style="text-align:center"><div style="margin-bottom:10px">${msg}</div><button class="btn" onclick="nextHand()">▶ มือต่อไป</button></div>`;
+    c.innerHTML=`<div style="text-align:center"><div style="margin-bottom:10px">${msg}</div></div>
+      ${coachHTML()}
+      <div style="text-align:center;margin-top:10px"><button class="btn" onclick="nextHand()">▶ มือต่อไป</button></div>`;
     return;
   }
   if(!game.needHumanAction()){ c.innerHTML=`<div class="muted" style="text-align:center">⏳ รอผู้เล่นอื่น…</div>`; return; }
