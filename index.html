@@ -271,6 +271,29 @@
     display:flex;align-items:center;gap:8px}
   .coach-tip .mini{display:inline-flex;align-items:center;gap:3px}
   .coach-tip .sw{width:10px;height:10px;border-radius:3px;display:inline-block}
+  /* ---- ที่ปรึกษาเรียลไทม์ + ปุ่มชิป ---- */
+  .advisor{border:1px solid var(--border);border-radius:10px;padding:9px 12px;margin-bottom:6px}
+  .advisor.good{border-color:#bfe0d0;background:#f0f8f4}
+  .advisor.ok{border-color:#d7e2ec;background:#f2f6fa}
+  .advisor.bad{border-color:#eccaca;background:#fbf3f3}
+  .adv-row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:7px}
+  .adv-badge{font-size:12.5px;font-weight:700;padding:3px 12px;border-radius:20px;color:#fff}
+  .adv-badge.good{background:var(--accent)} .adv-badge.ok{background:#5b8fb0} .adv-badge.bad{background:var(--lose)}
+  .adv-eq{font-size:12.5px;color:var(--text)}
+  .adv-note{font-size:11.5px;color:var(--muted);margin-top:5px}
+  .btn.reco{box-shadow:0 0 0 2px var(--accent);position:relative}
+  .btn.reco::after{content:'★ แนะนำ';position:absolute;top:-9px;left:50%;transform:translateX(-50%);
+    font-size:9px;font-weight:700;color:#fff;background:var(--accent);padding:0 5px;border-radius:8px;white-space:nowrap}
+  .betbox{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-top:10px}
+  .bet-quick{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;margin:3px 0}
+  .chip-btn{font-size:12px;padding:4px 10px;border:1px solid var(--border2);background:var(--surface);
+    border-radius:7px;cursor:pointer;font-family:inherit;color:var(--text)}
+  .chip-btn:hover{border-color:var(--accent)}
+  .chip-btn.allin{border-color:var(--lose);color:var(--lose)}
+  .chip{width:42px;height:42px;border-radius:50%;border:2px dashed rgba(255,255,255,.7);cursor:pointer;
+    font-size:11px;font-weight:700;color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);font-family:inherit}
+  .chip:hover{filter:brightness(1.08)}
+  .chip.c1{background:#3a7d5a} .chip.c2{background:#3a6f96} .chip.c3{background:#9a5b8f}
 </style>
 </head>
 <body>
@@ -551,7 +574,9 @@
         </select>
         <span class="faint" style="font-size:11.5px">(รวมคุณ 2–9 คน)</span>
       </label>
-      <label>หน้าตักเริ่มต้น: <select id="startStack"><option>1000</option><option selected>2000</option><option>5000</option></select></label>
+      <label>หน้าตักเริ่มต้น: <select id="startStack"><option>1000</option><option selected>2000</option><option>5000</option><option>10000</option></select></label>
+      <label>Big Blind: <select id="bbInput"><option>10</option><option selected>20</option><option>50</option><option>100</option><option>200</option></select>
+        <span class="faint" style="font-size:11.5px">(SB = ครึ่งหนึ่ง)</span></label>
       <button class="btn" onclick="newGame()">🔄 เริ่มเกมใหม่</button>
     </div>
     <div class="felt" id="tableWrap">
@@ -575,8 +600,14 @@ const P = window.Poker;
  * วิธีใช้เมื่ออัปโค้ดใหม่: เพิ่ม entry ใหม่ไว้บนสุดของ CHANGELOG แล้วอัป APP_VERSION
  * ให้ตรงกับ v ของ entry บนสุด — ผู้ใช้เดิมจะเห็นป๊อปอัปสรุปสิ่งที่อัปเดตอัตโนมัติ
  */
-let APP_VERSION = '1.7.0';   // fallback หาก fetch version.json ไม่ได้ (เช่น เปิดผ่าน file://)
+let APP_VERSION = '1.8.0';   // fallback หาก fetch version.json ไม่ได้ (เช่น เปิดผ่าน file://)
 let CHANGELOG = [
+  {v:'1.8.0', date:'2026-07-01', title:'ผู้ช่วยสอนสดขณะเล่น', items:[
+    'ตอนถึงตาเรา มีคำแนะนำสดว่าควรหมอบ เรียก หรือเพิ่มเดิมพัน พร้อมโอกาสชนะ',
+    'ไฮไลต์ปุ่มที่แนะนำให้เห็นชัด',
+    'เพิ่มปุ่มชิปและปุ่มขนาดเดิมพัน (ครึ่งกอง ¾ กอง เท่ากอง ออลอิน)',
+    'ตั้งค่า Big Blind ได้เอง',
+  ]},
   {v:'1.7.0', date:'2026-07-01', title:'เลือกจำนวนผู้เล่นบนโต๊ะได้', items:[
     'โต๊ะเล่นเลือกได้ตั้งแต่ 2 ถึง 9 คน (รวมคุณ)',
     'ที่นั่งจัดวางรอบโต๊ะให้พอดีอัตโนมัติตามจำนวนคน',
@@ -924,7 +955,9 @@ function newGame(){
   const players=[{name:'คุณ',isHuman:true,stack:stack}];
   const botNames=['บอท Alex','บอท Bea','บอท Cody','บอท Dee','บอท Eve','บอท Finn','บอท Gus','บอท Hana'];
   for(let i=0;i<nBots;i++) players.push({name:botNames[i],isHuman:false,stack:stack});
-  game=new HoldemGame({players:players,smallBlind:10,bigBlind:20});
+  let bb=parseInt(document.getElementById('bbInput').value,10)||20;
+  bb=Math.max(2,bb); const sb=Math.max(1,Math.floor(bb/2));
+  game=new HoldemGame({players:players,smallBlind:sb,bigBlind:bb});
   handDecisions=[];
   game.startHand(); loop();
 }
@@ -1141,20 +1174,65 @@ function renderControls(){
   if(!game.needHumanAction()){ c.innerHTML=`<div class="muted" style="text-align:center">⏳ รอผู้เล่นอื่น…</div>`; return; }
   const hero=game.players[0], need=game.toCall(hero), legal=game.legalActions(hero);
   const minTo=Math.min(game.minRaiseTo(),game.maxRaiseTo(hero)), maxTo=game.maxRaiseTo(hero);
-  let html=`<div class="row" style="justify-content:center;margin-top:0">`;
-  if(legal.includes('fold')) html+=`<button class="btn danger" onclick="humanAct('fold')">หมอบ</button>`;
-  if(legal.includes('check')) html+=`<button class="btn ghost" onclick="humanAct('check')">เช็ค</button>`;
-  if(legal.includes('call')) html+=`<button class="btn" onclick="humanAct('call')">เรียก ${need}</button>`;
+  const bb=game.bigBlind;
+
+  // ---- ที่ปรึกษาเรียลไทม์: คำนวณโอกาสชนะ + แนะนำ action ----
+  const alive=game.players.filter(p=>p.inHand&&!p.folded).length;
+  const eqRes=P.monteCarlo({heroHole:hero.hole, board:game.board, opponents:Math.max(1,alive-1), iterations:1500});
+  const equity=eqRes.win+eqRes.tie/2, potOdds= need>0? need/(game.pot+need)*100 : 0;
+  const rec=recommendAction(equity, potOdds, need, hero.stack>need);
+  const eqR=Math.round(equity), poR=Math.round(potOdds);
+  const advisor=`<div class="advisor ${rec.tone}">
+      <div class="adv-row">
+        <span class="adv-badge ${rec.tone}">แนะนำ: ${rec.label}</span>
+        <span class="adv-eq">โอกาสชนะ <b>${eqR}%</b></span>
+      </div>
+      <div class="eq-track">${need>0?`<div class="eq-mark" style="left:${Math.min(98,poR)}%"></div>`:''}<div class="eq-fill ${rec.tone==='bad'?'warn':'ok'}" style="width:${Math.max(3,Math.min(100,eqR))}%"></div></div>
+      <div class="adv-note">${rec.reason}${need>0?` · ราคาที่ต้องจ่าย ${poR}%`:''}</div>
+    </div>`;
+
+  const reco=(a)=> rec.act===a?'reco':'';
+  let html=advisor+`<div class="row" style="justify-content:center;margin-top:8px">`;
+  if(legal.includes('fold')) html+=`<button class="btn danger ${reco('fold')}" onclick="humanAct('fold')">หมอบ</button>`;
+  if(legal.includes('check')) html+=`<button class="btn ghost ${reco('check')}" onclick="humanAct('check')">เช็ค</button>`;
+  if(legal.includes('call')) html+=`<button class="btn ${reco('call')}" onclick="humanAct('call')">เรียก ${need}</button>`;
   html+=`</div>`;
   if(legal.includes('raise')){
-    html+=`<div class="row" style="justify-content:center;margin-bottom:0">
-      <span class="muted">เพิ่มเป็น</span>
-      <input type="range" id="raiseSlider" min="${minTo}" max="${maxTo}" value="${minTo}" step="${game.bigBlind}" oninput="document.getElementById('raiseVal').textContent=this.value" style="width:160px">
-      <b id="raiseVal" style="color:var(--accent-d);min-width:50px">${minTo}</b>
-      <button class="btn" onclick="humanAct('raise')">เพิ่ม / ออลอิน</button></div>`;
+    html+=`<div class="betbox">
+      <div class="bet-quick"><span class="muted" style="font-size:11.5px">ขนาด:</span>
+        <button class="chip-btn" onclick="quickPot(0.5)">½ กอง</button>
+        <button class="chip-btn" onclick="quickPot(0.75)">¾ กอง</button>
+        <button class="chip-btn" onclick="quickPot(1)">เท่ากอง</button>
+        <button class="chip-btn allin" onclick="setBetTo(${maxTo})">ออลอิน</button></div>
+      <div class="bet-quick"><span class="muted" style="font-size:11.5px">เพิ่มชิป:</span>
+        <button class="chip c1" onclick="addChip(${bb})">+${bb}</button>
+        <button class="chip c2" onclick="addChip(${bb*5})">+${bb*5}</button>
+        <button class="chip c3" onclick="addChip(${bb*25})">+${bb*25}</button>
+        <button class="chip-btn" onclick="setBetTo(${minTo})">รีเซ็ต</button></div>
+      <div class="row" style="justify-content:center;margin:8px 0 0">
+        <input type="range" id="raiseSlider" min="${minTo}" max="${maxTo}" value="${minTo}" step="${bb}" oninput="document.getElementById('raiseVal').textContent=this.value" style="width:150px">
+        <b id="raiseVal" style="color:var(--accent-d);min-width:52px">${minTo}</b>
+        <button class="btn ${reco('raise')}" onclick="humanAct('raise')">ยืนยันเพิ่ม</button></div>
+    </div>`;
   }
   c.innerHTML=html;
 }
+/* แนะนำ action จากโอกาสชนะ (equity) เทียบราคา (pot odds) */
+function recommendAction(eq, po, need, canRaise){
+  eq=Math.round(eq); po=Math.round(po);
+  if(need===0){
+    if(canRaise && eq>=65) return {act:'raise', label:'เดิมพัน (Bet)', reason:'ไพ่แข็ง ควรเดิมพันเก็บ value', tone:'good'};
+    return {act:'check', label:'เช็ค (Check)', reason: eq>=50?'ไพ่พอใช้ เช็คดูเชิงก่อน':'ไพ่ยังไม่แข็งพอจะเดิมพัน', tone:'ok'};
+  }
+  if(eq < po-5) return {act:'fold', label:'หมอบ (Fold)', reason:'โอกาสชนะต่ำกว่าราคาที่ต้องจ่าย', tone:'bad'};
+  if(canRaise && eq>=60 && eq>=po+18) return {act:'raise', label:'เพิ่มเดิมพัน (Raise)', reason:'ไพ่แข็งกว่าราคามาก คุ้มที่จะเพิ่ม', tone:'good'};
+  return {act:'call', label:'เรียก (Call)', reason:'โอกาสชนะคุ้มกับราคา', tone:'ok'};
+}
+/* ปุ่มปรับขนาดเดิมพัน (ชิป/สัดส่วนกอง) */
+function _bslider(){ return document.getElementById('raiseSlider'); }
+function setBetTo(v){ const s=_bslider(); if(!s) return; v=Math.max(+s.min, Math.min(+s.max, Math.round(v))); s.value=v; document.getElementById('raiseVal').textContent=s.value; }
+function addChip(v){ const s=_bslider(); if(!s) return; setBetTo(+s.value + v); }
+function quickPot(frac){ if(!game) return; setBetTo(game.currentBet + game.pot*frac); }
 /* จัดที่นั่งใหม่เมื่อหมุนจอ/เปลี่ยนขนาด */
 let _rz; window.addEventListener('resize',()=>{ clearTimeout(_rz); _rz=setTimeout(()=>{ if(game) render(); },150); });
 </script>
